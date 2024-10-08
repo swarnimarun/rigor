@@ -1,0 +1,27 @@
+{
+  "tests": [
+    {
+      "route": "/api/greet",
+      "method": "GET",
+      "skip_payload_fields": [
+        "ip"
+      ]
+    },
+    {
+      "route": "/api/greet",
+      "method": "POST",
+      "payload": {
+        "message": "hello world!"
+      },
+      "headers": {
+        "Content-Type": "application/json"
+      },
+      "expected_status_code": 200,
+      "skip_payload_fields": [
+        "ip"
+      ]
+    }
+  ],
+  "endpoint": "${RIGOR_ENDPOINT}",
+  "use_env": true
+}

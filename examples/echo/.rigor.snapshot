@@ -1,0 +1,40 @@
+{
+  "outputs": [
+    {
+      "status_code": 200,
+      "body": {
+        "headers": {
+          "Accept": "*/*",
+          "Accept-Encoding": "gzip",
+          "Host": "echo.free.beeceptor.com"
+        },
+        "host": "echo.free.beeceptor.com",
+        "method": "GET",
+        "parsedQueryParams": {},
+        "path": "/",
+        "protocol": "https"
+      }
+    },
+    {
+      "status_code": 200,
+      "body": {
+        "headers": {
+          "Accept": "*/*",
+          "Accept-Encoding": "gzip",
+          "Content-Length": "0",
+          "Content-Type": "application/json",
+          "Host": "echo.free.beeceptor.com"
+        },
+        "host": "echo.free.beeceptor.com",
+        "method": "POST",
+        "parsedQueryParams": {},
+        "path": "/",
+        "protocol": "https",
+        "rawBody": "",
+        "warnings": [
+          "Error in parsing JSON body. Please check the syntax. [Unexpected end of JSON input]"
+        ]
+      }
+    }
+  ]
+}
