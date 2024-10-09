@@ -115,6 +115,9 @@ impl Run {
                         method,
                         Url::from_str(&r.endpoint).expect("failed to build url from endpoint"),
                     );
+                    if let Some(v) = &test.payload {
+                        _ = req.body_mut().insert(reqwest::Body::from(v.to_string()));
+                    }
                     if let Some(h) = &test.headers {
                         for (k, v) in h {
                             _ = req.headers_mut().insert(
