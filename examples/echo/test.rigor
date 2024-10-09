@@ -4,7 +4,9 @@
       "route": "/api/greet",
       "method": "GET",
       "skip_payload_fields": [
-        "ip"
+        "ip",
+        "host",
+        "headers.Host"
       ]
     },
     {
@@ -18,7 +20,9 @@
       },
       "expected_status_code": 200,
       "skip_payload_fields": [
-        "ip"
+        "ip",
+        "host",
+        "headers.Host"
       ]
     }
   ],

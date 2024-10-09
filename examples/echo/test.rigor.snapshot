@@ -1,0 +1,42 @@
+{
+  "outputs": [
+    {
+      "method_str": "GET",
+      "endpoint": "https://echo.free.beeceptor.com/api/greet",
+      "status_code": 200,
+      "body": {
+        "headers": {
+          "Accept": "*/*",
+          "Accept-Encoding": "gzip"
+        },
+        "method": "GET",
+        "parsedQueryParams": {},
+        "path": "/api/greet",
+        "protocol": "https"
+      }
+    },
+    {
+      "method_str": "POST",
+      "endpoint": "https://echo.free.beeceptor.com/api/greet",
+      "payload": {
+        "message": "hello world!"
+      },
+      "status_code": 200,
+      "body": {
+        "headers": {
+          "Accept": "*/*",
+          "Accept-Encoding": "gzip",
+          "Content-Length": "26",
+          "Content-Type": "application/json"
+        },
+        "method": "POST",
+        "parsedBody": {
+          "message": "hello world!"
+        },
+        "parsedQueryParams": {},
+        "path": "/api/greet",
+        "protocol": "https"
+      }
+    }
+  ]
+}
