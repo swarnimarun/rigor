@@ -1,4 +1,7 @@
-use std::collections::{BTreeMap, HashMap};
+use std::{
+    collections::{BTreeMap, HashMap},
+    str::FromStr,
+};
 
 use serde_json::{json, Value};
 
@@ -92,7 +95,27 @@ pub(crate) fn skip_fields(body: &mut serde_json::Value, fields: &Option<Vec<Stri
     for field in fields {
         let nesting: Vec<&str> = field.split('.').collect();
         if nesting.len() == 1 {
-            body.as_object_mut().unwrap().remove(nesting[0]);
+            if let Some(map) = body.as_object_mut() {
+                if let Some(v) = map.get_mut(field) {
+                    match v {
+                        // set the bool to false
+                        Value::Bool(b) => *b = false,
+                        // zero the number
+                        Value::Number(n) => {
+                            let s = if n.is_f64() { "0.0" } else { "0" };
+                            *n = serde_json::Number::from_str(s)
+                                .expect("unreachable issue with line above or serde_json crate");
+                        }
+                        // empty the string
+                        Value::String(s) => s.clear(),
+                        // empty the array map
+                        Value::Array(a) => a.clear(),
+                        // empty the object map
+                        Value::Object(w) => w.clear(),
+                        Value::Null => {}
+                    }
+                }
+            }
             continue;
         }
         let m = body.as_object_mut().unwrap();

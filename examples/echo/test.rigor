@@ -1,29 +1,15 @@
 {
   "tests": [
     {
-      "route": "/api/greet",
+      "route": "pokemon/ditto",
       "method": "GET",
-      "skip_payload_fields": [
-        "ip",
-        "host",
-        "headers.Host"
-      ]
+      "skip_payload_fields": []
     },
     {
-      "route": "/api/greet",
-      "method": "POST",
-      "payload": {
-        "message": "hello world!"
-      },
-      "headers": {
-        "Content-Type": "application/json"
-      },
+      "route": "pokemon/charizard",
+      "method": "GET",
       "expected_status_code": 200,
-      "skip_payload_fields": [
-        "ip",
-        "host",
-        "headers.Host"
-      ]
+      "skip_payload_fields": []
     }
   ],
   "endpoint": "${RIGOR_ENDPOINT}",

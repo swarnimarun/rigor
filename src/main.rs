@@ -159,7 +159,7 @@ impl Run {
                 }
             }
             let client = reqwest::Client::new();
-            // run each request serially preferrably avoid running stuff in parallel for now!
+            // run each request serially preferably avoid running stuff in parallel for now!
             let v = match runtime.block_on(async { client.execute(req).await }) {
                 Err(err) => panic!("failed to make api request {err:#?}"),
                 Ok(v) => v,
@@ -172,16 +172,16 @@ impl Run {
             {
                 panic!("failed to match status_code in rigor file to response status_code");
             }
-            let mut body: serde_json::Value = runtime
-                .block_on(v.json())
-                .expect("failed to read the body from the response");
-            rigor::skip_fields(&mut body, &test.skip_payload_fields);
+            let mut body: Option<serde_json::Value> = runtime.block_on(v.json()).ok();
+            if let Some(b) = &mut body {
+                rigor::skip_fields(b, &test.skip_payload_fields);
+            }
             snapshot.outputs.push(snap::Output {
                 endpoint,
                 method_str,
-                payload: payload.cloned(),
+                request_payload: payload.cloned(),
                 status_code,
-                body,
+                response_body: body,
             });
         }
         let src =
