@@ -1,6 +1,6 @@
 use std::{
     collections::{BTreeMap, HashMap},
-    str::FromStr,
+    str::FromStr, path::PathBuf,
 };
 
 use serde_json::{json, Value};
@@ -31,6 +31,18 @@ pub(crate) struct TestCase {
 }
 
 impl Rigor {
+    pub(crate) fn get_path(path: Option<PathBuf>) -> PathBuf {
+        path.unwrap_or_else(|| {
+            std::env::var("RIGOR_PATH")
+                .as_ref()
+                .map(PathBuf::from)
+                .unwrap_or_else(|_| {
+                    std::env::current_dir()
+                        .expect("failed to get current directory")
+                        .join(".rigor")
+                })
+        })
+    }
     fn replace_with_env(src: &mut String, env: &HashMap<String, String>) {
         loop {
             let Some(start) = src.find("${") else {

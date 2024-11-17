@@ -9,6 +9,7 @@ use reqwest::{
     header::{HeaderName, HeaderValue},
     Url,
 };
+use rigor::Rigor;
 
 /// rigor is a simple application for quick and dirty
 /// snapshot testing for rest api, it uses the `.rigor` files
@@ -24,8 +25,8 @@ struct App {
 enum Commands {
     #[clap(alias("i"))]
     Init(Init),
-    //#[clap(alias("a"))]
-    //Add(Add),
+    #[clap(alias("a"))]
+    Add(Add),
     #[clap(alias("r"))]
     Run(Run),
 }
@@ -36,13 +37,15 @@ struct Init {
     #[arg(long, action)]
     /// overwrite the rigor file if already present
     force: bool,
+    /// Path to the rigor file to use for running the tests
+    #[arg(short, long)]
+    #[clap(default_value = "test.rigor")]
+    path: PathBuf,
 }
 
 impl Init {
     pub(crate) fn run(self) {
-        let path = std::env::current_dir()
-            .expect("failed to get current directory")
-            .join(".rigor");
+        let path = Rigor::get_path(self.path.clone().into());
         if path.exists() && !self.force {
             panic!(
                 "{} already exists, consider running with `--force` to overwrite",
@@ -57,15 +60,6 @@ impl Init {
     }
 }
 
-/// add a test to the rigor file using an interactive cli interface
-//#[derive(Debug, Parser)]
-//struct Add;
-//impl Add {
-//    pub(crate) fn run(self) {
-//        //
-//    }
-//}
-
 #[derive(Debug, Parser)]
 struct Run {
     /// This provides the endpoint url for RIGOR_ENDPOINT env variable
@@ -74,9 +68,8 @@ struct Run {
     url: String,
     /// This forces the endpoint to be against echo server this forces you to update
     /// the snapshots as well if you update the rigor file
-    #[clap(default_value = ".")]
     #[arg(short, long)]
-    snapshot_dir: PathBuf,
+    snapshot_dir: Option<PathBuf>,
     /// Path to the rigor file to use for running the tests
     #[arg(short, long)]
     #[clap(default_value = "test.rigor")]
@@ -95,6 +88,7 @@ impl Run {
         let key = "RIGOR_ENDPOINT".to_string();
         map.insert(key, self.url);
 
+        let path = Rigor::get_path(self.path.clone().into());
         let p = String::from(
             self.path
                 .file_name()
@@ -102,23 +96,21 @@ impl Run {
                 .to_str()
                 .expect("non unicode file name"),
         ) + ".snapshot";
-        let snapshot_path = self.snapshot_dir.join(&p);
+        let snapshot_path = self.snapshot_dir.or_else(|| self.path.parent().map(PathBuf::from)).map(|s| s.join(&p)).expect("failed to get snapshot path");
         if self.overwrite {
             _ = std::fs::remove_file(&snapshot_path);
         }
 
-        if !self.path.exists() {
-            panic!("path doesn't exists, invalid path: {}", self.path.display());
+        if !path.exists() {
+            panic!("path doesn't exists, invalid path: {}", path.display());
+        }
+        if !path.is_file() {
+            panic!("path not file, invalid path: {}", path.display());
         }
 
-        if !self.path.is_file() {
-            panic!("path not file, invalid path: {}", self.path.display());
-        }
-
-        let mut r: rigor::Rigor = serde_json::from_slice(
-            &std::fs::read(&self.path).expect("failed to read a `*.rigor` file"),
-        )
-        .expect("failed to deserialize .rigor file");
+        let mut r: rigor::Rigor =
+            serde_json::from_slice(&std::fs::read(&path).expect("failed to read a rigor file"))
+                .expect("failed to deserialize rigor file");
         r.ensure_env(&map);
 
         let expected = std::fs::read_to_string(&snapshot_path).ok();
@@ -201,7 +193,62 @@ pub fn main() {
     let app = App::parse();
     match app.command {
         Commands::Init(i) => i.run(),
-        //Commands::Add(a) => a.run(),
+        Commands::Add(a) => a.run(),
         Commands::Run(r) => r.run(),
+    }
+}
+
+#[derive(Parser, Debug)]
+/// Add a new test case to the rigor test suite
+struct Add {
+    /// Path to the rigor file to use for running the tests
+    #[arg(short, long)]
+    #[clap(default_value = "test.rigor")]
+    path: PathBuf,
+    #[arg(short, long)]
+    /// The name of the test case
+    name: String,
+    #[arg(short, long)]
+    /// The route, is the path relative to the endpoint
+    route: String,
+    #[arg(short, long)]
+    /// The method, defaults to GET
+    method: String,
+    #[arg(short, long)]
+    /// The payload, defaults to empty
+    payload: Option<serde_json::Value>,
+    #[arg(short, long)]
+    /// The headers, defaults to empty
+    headers: Option<Vec<String>>,
+    #[arg(short, long)]
+    /// The expected status code, defaults to 200
+    expected_status_code: Option<u16>,
+    #[arg(short, long)]
+    /// The fields to skip in the payload, defaults to empty
+    skip_payload_fields: Option<Vec<String>>,
+}
+
+impl Add {
+    fn run(&self) {
+        let mut rigor = rigor::Rigor::init_rigor();
+        rigor.ensure_env(&std::env::vars().collect());
+        let test_case = rigor::TestCase {
+            route: self.route.clone(),
+            method: self.method.clone(),
+            payload: self.payload.clone(),
+            headers: self.headers.as_ref().map(|h| {
+                h.iter()
+                    .flat_map(|r| r.split_once(':'))
+                    .map(|s| (s.0.trim().to_string(), s.1.trim().to_string()))
+                    .collect()
+            }),
+            expected_status_code: self.expected_status_code.clone(),
+            skip_payload_fields: self.skip_payload_fields.clone(),
+        };
+        rigor.tests.push(test_case);
+        _ = std::fs::write(
+            Rigor::get_path(self.path.clone().into()),
+            serde_json::to_string_pretty(&rigor).expect("failed to serialize"),
+        );
     }
 }
