@@ -1,7 +1,8 @@
 [package]
 name = "rigor"
 version = "0.1.0"
-author = "Swarnim Arun <contact@swarnimarun.com>"
+author = "Swarnim Arun <mail@swarnimarun.com>"
+license = "MIT"
 edition = "2021"
 
 [dependencies]
