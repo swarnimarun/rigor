@@ -96,7 +96,11 @@ impl Run {
                 .to_str()
                 .expect("non unicode file name"),
         ) + ".snapshot";
-        let snapshot_path = self.snapshot_dir.or_else(|| self.path.parent().map(PathBuf::from)).map(|s| s.join(&p)).expect("failed to get snapshot path");
+        let snapshot_path = self
+            .snapshot_dir
+            .or_else(|| self.path.parent().map(PathBuf::from))
+            .map(|s| s.join(&p))
+            .expect("failed to get snapshot path");
         if self.overwrite {
             _ = std::fs::remove_file(&snapshot_path);
         }
@@ -113,10 +117,15 @@ impl Run {
                 .expect("failed to deserialize rigor file");
         r.ensure_env(&map);
 
-        let expected = std::fs::read_to_string(&snapshot_path).ok();
-        let mut snapshot = snap::Snapshot { outputs: vec![] };
+        let expected: Option<snap::Snapshot> = std::fs::read(&snapshot_path)
+            .ok()
+            .and_then(|v| serde_json::from_slice(&v).ok());
+        let mut snapshot = snap::Snapshot {
+            outputs: Default::default(),
+        };
+        let mut failed = false;
         // run the rigor file
-        for (_i, test) in r.tests.iter().enumerate() {
+        for test in r.tests.iter() {
             let method_str = test.method.clone();
             let endpoint = r.endpoint.clone() + &test.route;
             println!("Testing [{method_str}] URL: {endpoint}");
@@ -168,21 +177,44 @@ impl Run {
             if let Some(b) = &mut body {
                 rigor::skip_fields(b, &test.skip_payload_fields);
             }
-            snapshot.outputs.push(snap::Output {
+            let output = snap::Output {
+                name: test.name.clone(),
                 endpoint,
                 method_str,
                 request_payload: payload.cloned(),
                 status_code,
                 response_body: body,
-            });
+            };
+            if let Some(expected) = &expected {
+                expected.outputs.get(&output).map(|e| {
+                    let e_src = serde_json::to_string_pretty(&e).unwrap();
+                    let o_src = serde_json::to_string_pretty(&output).unwrap();
+                    // will print the diff
+                    if e_src == o_src {
+                        println!("Success [{}]", output.name)
+                    } else {
+                        println!("Comparing [{}]", output.name);
+                        let comparison = pretty_assertions::StrComparison::new(&e_src, &o_src);
+                        let src = comparison.to_string();
+                        failed = true;
+                        println!("{src}");
+                        // TODO(for tty platforms): don't panic if the diff doesn't match
+                        // ask the user if they want to update the snapshot
+                        // if they say yes, update the snapshot
+                        // if they say no, continue to the next test
+                    }
+                });
+            }
+            snapshot.outputs.insert(output);
         }
-        let src =
-            serde_json::to_string_pretty(&snapshot).expect("failed to serialize reqwest::Response");
-        if let Some(expected) = expected {
-            println!("Comparing results against the saved snapshot");
-            pretty_assertions::assert_str_eq!(src, expected);
-            println!("Matched successfully");
-        } else {
+        if failed {
+            println!(">> Snapshot didn't match the request output <<");
+            std::process::exit(-1);
+        }
+        let src = serde_json::to_string_pretty(&snapshot)
+            .expect("failed to serialize snapshot ?? unreachable; might be a rust stdlib bug");
+        if expected.is_none() {
+            println!("Existing snapshot not found.");
             println!("Storing the new snapshot at: {}", snapshot_path.display());
             std::fs::write(snapshot_path, src).expect("failed to write snapshot to path");
         }
@@ -233,6 +265,7 @@ impl Add {
         let mut rigor = rigor::Rigor::init_rigor();
         rigor.ensure_env(&std::env::vars().collect());
         let test_case = rigor::TestCase {
+            name: self.name.clone(),
             route: self.route.clone(),
             method: self.method.clone(),
             payload: self.payload.clone(),

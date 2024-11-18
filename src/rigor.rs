@@ -18,6 +18,7 @@ pub(crate) struct Rigor {
 
 #[derive(Debug, serde::Serialize, serde::Deserialize)]
 pub(crate) struct TestCase {
+    pub name: String,
     pub route: String,
     pub method: String,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -75,6 +76,7 @@ impl Rigor {
         Self {
             tests: vec![
                 TestCase {
+                    name: "greet-w/o-payload".to_string(),
                     route: "/api/greet".to_string(),
                     method: "GET".to_string(),
                     payload: None,
@@ -83,6 +85,7 @@ impl Rigor {
                     skip_payload_fields: Some(vec!["ip".to_string()]),
                 },
                 TestCase {
+                    name: "greet-with-payload".to_string(),
                     route: "/api/greet".to_string(),
                     method: "POST".to_string(),
                     payload: Some(json!({"message":"hello world!"})),

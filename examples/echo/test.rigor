@@ -1,17 +1,19 @@
 {
   "tests": [
     {
+      "name": "get pokemon ditto",
       "route": "pokemon/ditto",
       "method": "GET",
-      "skip_payload_fields": []
+      "skip_payload_fields": ["ip"]
     },
     {
+      "name": "get pokemon charizard",
       "route": "pokemon/charizard",
       "method": "GET",
       "expected_status_code": 200,
-      "skip_payload_fields": []
+      "skip_payload_fields": ["ip"]
     }
   ],
-  "endpoint": "${RIGOR_ENDPOINT}",
+  "endpoint": "https://echo.free.beeceptor.com/",
   "use_env": true
 }
