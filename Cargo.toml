@@ -1,10 +1,12 @@
 [package]
 name = "rigor"
-version = "0.2.0"
+version = "0.2.1"
 description = "CLI tool to perform snapshot testing for your HTTP/REST APIs."
 author = "Swarnim Arun <mail@swarnimarun.com>"
+repository = "https://github.com/swarnimarun/rigor"
 license = "MIT"
 edition = "2021"
+keywords = ["cli", "snapshot", "testing", "http", "rest", "api"]
 
 [dependencies]
 clap = { version = "4.5.20", features = ["derive", "env"] }
